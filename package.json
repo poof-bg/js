@@ -7,10 +7,10 @@
   "homepage": "https://poof.bg",
   "repository": {
     "type": "git",
-    "url": "https://github.com/poof-bg/sdk-typescript"
+    "url": "https://github.com/poof-bg/js"
   },
   "bugs": {
-    "url": "https://github.com/poof-bg/sdk-typescript/issues"
+    "url": "https://github.com/poof-bg/js/issues"
   },
   "keywords": [
     "poof",

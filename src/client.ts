@@ -17,7 +17,7 @@ const DEFAULT_TIMEOUT = 60000;
  *
  * @example
  * ```typescript
- * import { Poof } from '@poof/sdk';
+ * import { Poof } from '@poof-bg/js';
  *
  * const poof = new Poof({ apiKey: 'your-api-key' });
  * const result = await poof.removeBackground(imageFile);

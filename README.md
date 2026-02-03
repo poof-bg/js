@@ -1,21 +1,21 @@
-# @poof/sdk
+# @poof-bg/js
 
 Official TypeScript/JavaScript SDK for the [Poof](https://poof.bg) background removal API.
 
 ## Installation
 
 ```bash
-npm install @poof/sdk
+npm install @poof-bg/js
 # or
-yarn add @poof/sdk
+yarn add @poof-bg/js
 # or
-pnpm add @poof/sdk
+pnpm add @poof-bg/js
 ```
 
 ## Quick Start
 
 ```typescript
-import { Poof } from '@poof/sdk';
+import { Poof } from '@poof-bg/js';
 
 const poof = new Poof({ apiKey: 'your-api-key' });
 
@@ -31,7 +31,7 @@ const result = await poof.removeBackground(imageFile);
 ### Basic Background Removal
 
 ```typescript
-import { Poof } from '@poof/sdk';
+import { Poof } from '@poof-bg/js';
 
 const poof = new Poof({ apiKey: process.env.POOF_API_KEY! });
 
@@ -60,7 +60,7 @@ const result = await poof.removeBackground(file, {
 ### Node.js: From File Path
 
 ```typescript
-import { Poof } from '@poof/sdk';
+import { Poof } from '@poof-bg/js';
 import fs from 'node:fs';
 
 const poof = new Poof({ apiKey: process.env.POOF_API_KEY! });
@@ -75,7 +75,7 @@ fs.writeFileSync('output.png', Buffer.from(result.data));
 ### Node.js: From Buffer
 
 ```typescript
-import { Poof } from '@poof/sdk';
+import { Poof } from '@poof-bg/js';
 import fs from 'node:fs';
 
 const poof = new Poof({ apiKey: process.env.POOF_API_KEY! });
@@ -119,7 +119,7 @@ import {
   PaymentRequiredError,
   RateLimitError,
   ValidationError,
-} from '@poof/sdk';
+} from '@poof-bg/js';
 
 try {
   const result = await poof.removeBackground(file);
@@ -176,7 +176,7 @@ import type {
   ImageFormat,
   ImageSize,
   Channels,
-} from '@poof/sdk';
+} from '@poof-bg/js';
 ```
 
 ## Requirements
