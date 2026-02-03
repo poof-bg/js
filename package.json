@@ -1,5 +1,5 @@
 {
-  "name": "@poof/sdk",
+  "name": "@poof-bg/js",
   "version": "1.0.0",
   "description": "Official Poof SDK for background removal",
   "author": "Poof <support@poof.bg>",
