@@ -16,23 +16,25 @@ export interface PoofOptions {
 export type ImageFormat = 'png' | 'jpg' | 'webp';
 
 /** Output color channels */
-export type Channels = 'rgba' | 'rgb';
+export type Channels = 'rgba' | 'rgb' | 'alpha';
 
 /** Output image size preset */
-export type ImageSize = 'full' | 'preview' | 'small' | 'medium' | 'large';
+export type ImageSize = 'full' | 'preview' | 'medium' | 'hd';
 
 /** Options for background removal */
 export interface RemoveBackgroundOptions {
   /** Output format (default: png) */
   format?: ImageFormat;
-  /** Color channels - rgba for transparency, rgb for opaque (default: rgba) */
+  /** Color channels - rgba for transparency, rgb for opaque, alpha for the grayscale mask only (default: rgba) */
   channels?: Channels;
-  /** Background color (hex, rgb, or color name). Only applies when channels is 'rgb' */
+  /** Background color (hex, rgb, or color name). Applies when channels is 'rgb' or 'rgba' */
   bgColor?: string;
   /** Output size preset (default: full) */
   size?: ImageSize;
-  /** Crop to subject bounds (default: false) */
-  crop?: boolean;
+  /** Crop to subject bounds: true/false or an aspect ratio like '1:1', '4:3', '16:9' (default: false) */
+  crop?: boolean | string;
+  /** Padding around the subject when crop is enabled, as a fraction ('0.1') or percentage ('10%') */
+  padding?: string;
 }
 
 /** Metadata returned with processed images */
@@ -47,6 +49,16 @@ export interface ProcessingMetadata {
   height: number;
   /** Content type of the result */
   contentType: string;
+  /**
+   * Confidence in the alpha matte, 0-1. 1 means a fully decisive mask; lower
+   * values mean the model hedged. Heuristic, not a calibrated probability.
+   */
+  matteConfidence?: number;
+  /**
+   * Fraction of pixels with alpha between 0.1 and 0.9, 0-1. High values
+   * indicate large uncertain regions - useful for flagging results for review.
+   */
+  matteAmbiguousRatio?: number;
 }
 
 /** Result of background removal including image data and metadata */

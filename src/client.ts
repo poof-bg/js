@@ -82,6 +82,7 @@ export class Poof {
     if (options.bgColor) formData.append('bg_color', options.bgColor);
     if (options.size) formData.append('size', options.size);
     if (options.crop !== undefined) formData.append('crop', String(options.crop));
+    if (options.padding) formData.append('padding', options.padding);
 
     const response = await this.fetch(`${this.baseUrl}/remove`, {
       method: 'POST',
@@ -94,6 +95,9 @@ export class Poof {
 
     const data = await response.arrayBuffer();
 
+    const matteConfidence = response.headers.get('X-Matte-Confidence');
+    const matteAmbiguousRatio = response.headers.get('X-Matte-Ambiguous-Ratio');
+
     return {
       data,
       metadata: {
@@ -102,6 +106,8 @@ export class Poof {
         width: parseInt(response.headers.get('X-Image-Width') || '0', 10),
         height: parseInt(response.headers.get('X-Image-Height') || '0', 10),
         contentType: response.headers.get('Content-Type') || 'image/png',
+        matteConfidence: matteConfidence !== null ? parseFloat(matteConfidence) : undefined,
+        matteAmbiguousRatio: matteAmbiguousRatio !== null ? parseFloat(matteAmbiguousRatio) : undefined,
       },
     };
   }
