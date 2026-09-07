@@ -12,6 +12,7 @@ export type {
   ImageFormat,
   Channels,
   ImageSize,
+  FitMode,
   RemoveBackgroundOptions,
   RemoveBackgroundResult,
   ProcessingMetadata,

@@ -21,6 +21,14 @@ export type Channels = 'rgba' | 'rgb' | 'alpha';
 /** Output image size preset */
 export type ImageSize = 'full' | 'preview' | 'medium' | 'hd';
 
+/**
+ * How the image is fitted into a fixed width/height (never stretched):
+ * 'contain' scales to fit inside and pads the rest, 'cover' scales to fill and
+ * crops the overflow around the subject, 'scale-down' is contain without ever
+ * enlarging a smaller image.
+ */
+export type FitMode = 'contain' | 'cover' | 'scale-down';
+
 /** Options for background removal */
 export interface RemoveBackgroundOptions {
   /** Output format (default: png) */
@@ -35,6 +43,12 @@ export interface RemoveBackgroundOptions {
   crop?: boolean | string;
   /** Padding around the subject when crop is enabled, as a fraction ('0.1') or percentage ('10%') */
   padding?: string;
+  /** Output width in pixels (1-6000). On its own, the height follows the aspect ratio. Overrides size */
+  width?: number;
+  /** Output height in pixels (1-6000). On its own, the width follows the aspect ratio. Overrides size */
+  height?: number;
+  /** How to fit into width x height without stretching (default: contain) */
+  fit?: FitMode;
 }
 
 /** Metadata returned with processed images */

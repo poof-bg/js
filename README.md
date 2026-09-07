@@ -50,11 +50,33 @@ const url = URL.createObjectURL(blob);
 ```typescript
 const result = await poof.removeBackground(file, {
   format: 'webp',      // Output format: 'png' | 'jpg' | 'webp'
-  crop: true,          // Crop to subject bounds
-  size: 'medium',      // Size: 'full' | 'preview' | 'small' | 'medium' | 'large'
-  channels: 'rgb',     // 'rgba' for transparency, 'rgb' for opaque
-  bgColor: '#ffffff',  // Background color (when channels is 'rgb')
+  crop: true,          // Crop to subject bounds, or an aspect ratio like '1:1'
+  padding: '10%',      // Padding around the subject when cropping
+  size: 'medium',      // Size preset: 'full' | 'preview' | 'medium' | 'hd'
+  channels: 'rgb',     // 'rgba' for transparency, 'rgb' for opaque, 'alpha' for the mask
+  bgColor: '#ffffff',  // Background color (when channels is 'rgb' or 'rgba')
 });
+```
+
+### Fixed Output Size
+
+Resize to an exact size without stretching. `fit` decides what happens with the aspect-ratio difference: `contain` (default) pads, `cover` crops the overflow around the subject, `scale-down` pads without ever enlarging a smaller image. Setting only `width` or `height` keeps the aspect ratio. `size` is ignored when a fixed size is set.
+
+```typescript
+// 500x500 product image: subject cropped, padded and centred
+const result = await poof.removeBackground(file, { crop: true, width: 500, height: 500 });
+
+// Fill a 1080x1080 canvas on white instead
+const result = await poof.removeBackground(file, {
+  width: 1080,
+  height: 1080,
+  fit: 'cover',
+  format: 'jpg',
+  bgColor: '#ffffff',
+});
+
+// Cap the width at 1000px, keep the aspect ratio, leave smaller images alone
+const result = await poof.removeBackground(file, { width: 1000, fit: 'scale-down' });
 ```
 
 ### Node.js: From File Path

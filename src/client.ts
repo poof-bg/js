@@ -58,6 +58,9 @@ export class Poof {
    *   size: 'medium'
    * });
    *
+   * // Exact 500x500 output, subject cropped and centred, never stretched
+   * const result = await poof.removeBackground(file, { crop: true, width: 500, height: 500 });
+   *
    * // Node.js: from file path
    * const result = await poof.removeBackground('/path/to/image.png');
    *
@@ -83,6 +86,9 @@ export class Poof {
     if (options.size) formData.append('size', options.size);
     if (options.crop !== undefined) formData.append('crop', String(options.crop));
     if (options.padding) formData.append('padding', options.padding);
+    if (options.width !== undefined) formData.append('width', String(options.width));
+    if (options.height !== undefined) formData.append('height', String(options.height));
+    if (options.fit) formData.append('fit', options.fit);
 
     const response = await this.fetch(`${this.baseUrl}/remove`, {
       method: 'POST',
