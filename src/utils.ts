@@ -50,17 +50,12 @@ export async function toBlob(input: ImageInput): Promise<Blob> {
     return new Blob([input], { type: mimeType });
   }
 
-  // Uint8Array
-  if (input instanceof Uint8Array) {
-    const mimeType = detectMimeType(input);
-    return new Blob([input], { type: mimeType });
-  }
-
-  // Node.js Buffer
-  if (isNode && Buffer.isBuffer(input)) {
-    const uint8 = new Uint8Array(input);
-    const mimeType = detectMimeType(uint8);
-    return new Blob([input], { type: mimeType });
+  // Uint8Array or Node.js Buffer. Copy into a fresh ArrayBuffer-backed view:
+  // a view over a SharedArrayBuffer (or a Buffer pool slice) is not a valid BlobPart.
+  if (input instanceof Uint8Array || (isNode && Buffer.isBuffer(input))) {
+    const bytes = Uint8Array.from(input);
+    const mimeType = detectMimeType(bytes);
+    return new Blob([bytes], { type: mimeType });
   }
 
   // String - treat as file path (Node.js only)
