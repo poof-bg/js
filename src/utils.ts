@@ -1,4 +1,4 @@
-import type { ImageInput } from './types.js';
+import type { ImageInput, MediaInput, UrlInput } from './types.js';
 
 /** Check if running in Node.js environment */
 export const isNode = typeof process !== 'undefined' && process.versions?.node;
@@ -21,6 +21,18 @@ function detectMimeType(buffer: Uint8Array): string {
   if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
     return 'image/gif';
   }
+  // ISO base media file (MP4, MOV): 'ftyp' at offset 4
+  if (buffer[4] === 0x66 && buffer[5] === 0x74 && buffer[6] === 0x79 && buffer[7] === 0x70) {
+    // 'qt  ' brand is QuickTime
+    if (buffer[8] === 0x71 && buffer[9] === 0x74) {
+      return 'video/quicktime';
+    }
+    return 'video/mp4';
+  }
+  // EBML header (WebM, Matroska)
+  if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) {
+    return 'video/webm';
+  }
   // Default to octet-stream
   return 'application/octet-stream';
 }
@@ -32,6 +44,9 @@ function getExtension(mimeType: string): string {
     'image/jpeg': 'jpg',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'video/mp4': 'mp4',
+    'video/quicktime': 'mov',
+    'video/webm': 'webm',
   };
   return map[mimeType] || 'bin';
 }
@@ -79,6 +94,11 @@ export async function toBlob(input: ImageInput): Promise<Blob> {
       jpeg: 'image/jpeg',
       webp: 'image/webp',
       gif: 'image/gif',
+      mp4: 'video/mp4',
+      m4v: 'video/mp4',
+      mov: 'video/quicktime',
+      webm: 'video/webm',
+      mkv: 'video/x-matroska',
     };
     
     const finalMimeType = mimeFromExt[ext] || mimeType;
@@ -99,9 +119,24 @@ export function getFilename(input: ImageInput, mimeType: string): string {
   if (typeof input === 'string' && isNode) {
     // Extract filename from path
     const parts = input.split(/[/\\]/);
-    return parts[parts.length - 1] || `image.${getExtension(mimeType)}`;
+    return parts[parts.length - 1] || defaultFilename(mimeType);
   }
 
   // Generate name from mime type
-  return `image.${getExtension(mimeType)}`;
+  return defaultFilename(mimeType);
+}
+
+function defaultFilename(mimeType: string): string {
+  const stem = mimeType.startsWith('video/') ? 'video' : 'image';
+  return `${stem}.${getExtension(mimeType)}`;
+}
+
+/** Is the input a `{ url }` object rather than file contents? */
+export function isUrlInput(input: MediaInput): input is UrlInput {
+  return typeof input === 'object' && input !== null && 'url' in input && typeof (input as UrlInput).url === 'string';
+}
+
+/** Resolve after `ms` milliseconds */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
