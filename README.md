@@ -116,7 +116,7 @@ fs.writeFileSync('output.png', Buffer.from(result.data));
 
 ### Video
 
-Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha) or `mp4` (H.264, composited on `bgColor`, default white). Audio is kept. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
+Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, for stickers and chat; pass `size: 'medium'` to keep it small). Audio is kept except for `gif`. An animated GIF is accepted as input too. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
 
 ```typescript
 import { Poof } from '@poof-bg/js';
@@ -142,7 +142,7 @@ Shorter: `wait: true` submits and waits in one call.
 
 ```typescript
 const done = await poof.removeBackground('./clip.mp4', {
-  format: 'mp4',        // 'webm' (transparent) | 'mov' (transparent ProRes) | 'mp4' (opaque)
+  format: 'mp4',        // 'webm' (transparent) | 'mov' (transparent ProRes) | 'mp4' (opaque) | 'gif' (1-bit transparent)
   channels: 'rgba',     // 'rgba' | 'rgb' | 'alpha' (grayscale matte video, no audio)
   bgColor: '#00ff00',   // Background for opaque output (mp4 or channels 'rgb'); default white
   size: 'hd',           // Longest side cap: 640 / 1280 / 1920 (hd); 'full' keeps the source up to 4K
@@ -258,7 +258,7 @@ const poof = new Poof({
 | File path (string) | ❌ | ✅   |
 | `{ url: string }` (public https URL) | ✅ | ✅ |
 
-Images: PNG, JPEG, WebP, GIF (first frame), up to 20 MB. Videos: MP4, MOV, WebM, MKV, up to 100 MB uploaded or 500 MB by URL, up to 5 minutes.
+Images: PNG, JPEG, WebP, single-frame GIF, up to 20 MB. Videos: MP4, MOV, WebM, MKV, animated GIF, up to 100 MB uploaded or 500 MB by URL, up to 5 minutes.
 
 ## TypeScript
 

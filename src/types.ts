@@ -16,7 +16,7 @@ export interface PoofOptions {
 export type ImageFormat = 'png' | 'jpg' | 'webp';
 
 /** Output video format: VP9 WebM (alpha or opaque), ProRes MOV (alpha or opaque) or H.264 MP4 (opaque) */
-export type VideoFormat = 'webm' | 'mov' | 'mp4';
+export type VideoFormat = 'webm' | 'mov' | 'mp4' | 'gif';
 
 /** Output color channels */
 export type Channels = 'rgba' | 'rgb' | 'alpha';
