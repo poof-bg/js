@@ -111,6 +111,12 @@ const ERROR_MAP: Record<ErrorCode, typeof PoofError> = {
   validation_error: ValidationError,
   missing_image: ValidationError,
   image_too_large: ValidationError,
+  invalid_image: ValidationError,
+  video_too_large: ValidationError,
+  video_too_long: ValidationError,
+  invalid_video: ValidationError,
+  job_not_found: ValidationError,
+  job_failed: PoofError,
   upstream_error: ServerError,
   internal_server_error: ServerError,
 };

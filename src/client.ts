@@ -1,16 +1,21 @@
 import type {
   PoofOptions,
-  ImageInput,
+  MediaInput,
   RemoveBackgroundOptions,
   RemoveBackgroundResult,
+  Job,
+  JobStatus,
+  WaitForJobOptions,
   AccountInfo,
   ApiErrorResponse,
 } from './types.js';
 import { PoofError } from './errors.js';
-import { toBlob, getFilename } from './utils.js';
+import { toBlob, getFilename, isUrlInput, sleep } from './utils.js';
 
 const DEFAULT_BASE_URL = 'https://api.poof.bg/v1';
 const DEFAULT_TIMEOUT = 60000;
+const DEFAULT_POLL_INTERVAL_MS = 3000;
+const DEFAULT_JOB_TIMEOUT_MS = 600000;
 
 /**
  * Poof API client for background removal
@@ -39,45 +44,52 @@ export class Poof {
   }
 
   /**
-   * Remove background from an image
+   * Remove the background from an image or a video.
    *
-   * @param input - Image input: File, Blob, Buffer, ArrayBuffer, Uint8Array, or file path (Node.js)
+   * Images are processed synchronously and come back as bytes. Videos are
+   * processed as a job: the call returns a queued {@link Job}; poll it with
+   * {@link getJob} / {@link waitForJob}, or pass `wait: true` to get the
+   * completed job (with `resultUrl`) directly. Use {@link isJob} to tell the
+   * two apart.
+   *
+   * @param input - File, Blob, Buffer, ArrayBuffer, Uint8Array, file path (Node.js), or `{ url }`
    * @param options - Processing options
-   * @returns Processed image data and metadata
+   * @returns Processed image data and metadata, or a video Job
    *
    * @example
    * ```typescript
-   * // Basic usage
+   * // Image
    * const result = await poof.removeBackground(file);
    * const imageBlob = new Blob([result.data], { type: result.metadata.contentType });
    *
    * // With options
-   * const result = await poof.removeBackground(file, {
-   *   format: 'webp',
-   *   crop: true,
-   *   size: 'medium'
-   * });
+   * const result = await poof.removeBackground(file, { format: 'webp', crop: true, size: 'medium' });
    *
    * // Exact 500x500 output, subject cropped and centred, never stretched
    * const result = await poof.removeBackground(file, { crop: true, width: 500, height: 500 });
    *
-   * // Node.js: from file path
-   * const result = await poof.removeBackground('/path/to/image.png');
+   * // Video: submit, then wait for the result
+   * const job = await poof.removeBackground('./clip.mp4', { format: 'webm' });
+   * const done = await poof.waitForJob(job);
+   * console.log(done.resultUrl);
    *
-   * // Node.js: save to file
-   * const fs = require('fs');
-   * fs.writeFileSync('output.png', Buffer.from(result.data));
+   * // Video from a public URL, waiting inline
+   * const done = await poof.removeBackground({ url: 'https://example.com/clip.mp4' }, { wait: true });
    * ```
    */
   async removeBackground(
-    input: ImageInput,
+    input: MediaInput,
     options: RemoveBackgroundOptions = {}
-  ): Promise<RemoveBackgroundResult> {
-    const blob = await toBlob(input);
-    const filename = getFilename(input, blob.type);
-
+  ): Promise<RemoveBackgroundResult | Job> {
     const formData = new FormData();
-    formData.append('image_file', blob, filename);
+
+    if (isUrlInput(input)) {
+      formData.append('url', input.url);
+    } else {
+      const blob = await toBlob(input);
+      const filename = getFilename(input, blob.type);
+      formData.append('file', blob, filename);
+    }
 
     // Add optional parameters
     if (options.format) formData.append('format', options.format);
@@ -99,6 +111,15 @@ export class Poof {
       await this.handleError(response);
     }
 
+    // Videos are accepted as a job
+    if (response.status === 202) {
+      const job = toJob(await response.json());
+      if (options.wait) {
+        return this.waitForJob(job, options.wait === true ? {} : options.wait);
+      }
+      return job;
+    }
+
     const data = await response.arrayBuffer();
 
     const matteConfidence = response.headers.get('X-Matte-Confidence');
@@ -116,6 +137,82 @@ export class Poof {
         matteAmbiguousRatio: matteAmbiguousRatio !== null ? parseFloat(matteAmbiguousRatio) : undefined,
       },
     };
+  }
+
+  /**
+   * Get the current state of a video job. Polling is free and does not count
+   * against your rate limit.
+   *
+   * @param jobId - The job ID returned by removeBackground()
+   *
+   * @example
+   * ```typescript
+   * const job = await poof.getJob('job_8f3a1c2e9b7d4a10');
+   * console.log(job.status, job.progress);
+   * ```
+   */
+  async getJob(jobId: string): Promise<Job> {
+    const response = await this.fetch(`${this.baseUrl}/jobs/${encodeURIComponent(jobId)}`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      await this.handleError(response);
+    }
+
+    return toJob(await response.json());
+  }
+
+  /**
+   * Poll a video job until it is completed.
+   *
+   * @param job - A Job or a job ID
+   * @param options - Poll interval, timeout and progress callback
+   * @returns The completed job; `resultUrl` is a direct download link valid for 24 hours
+   * @throws PoofError with code `job_failed` if the job fails (credits are refunded),
+   *   or code `timeout` if `timeoutMs` elapses first
+   *
+   * @example
+   * ```typescript
+   * const done = await poof.waitForJob(job, {
+   *   onProgress: (j) => console.log(`${Math.round(j.progress * 100)}%`),
+   * });
+   * const video = await fetch(done.resultUrl!);
+   * ```
+   */
+  async waitForJob(job: Job | string, options: WaitForJobOptions = {}): Promise<Job> {
+    const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+    const timeoutMs = options.timeoutMs ?? DEFAULT_JOB_TIMEOUT_MS;
+    const deadline = Date.now() + timeoutMs;
+
+    let current: Job = typeof job === 'string' ? await this.getJob(job) : job;
+    options.onProgress?.(current);
+
+    while (!isTerminal(current.status)) {
+      if (Date.now() >= deadline) {
+        throw new PoofError(
+          `Timed out after ${timeoutMs}ms waiting for job ${current.id}`,
+          'timeout',
+          { status: 408 }
+        );
+      }
+      await sleep(Math.min(pollIntervalMs, Math.max(0, deadline - Date.now())));
+      current = await this.getJob(current.id);
+      options.onProgress?.(current);
+    }
+
+    if (current.status === 'failed') {
+      throw new PoofError(
+        current.error?.message || `Job ${current.id} failed`,
+        'job_failed',
+        { details: current.error?.code }
+      );
+    }
+
+    return current;
   }
 
   /**
@@ -186,4 +283,72 @@ export class Poof {
 
     throw PoofError.fromResponse(errorData, response.status);
   }
+}
+
+/**
+ * Type guard: did removeBackground() return a video Job rather than image bytes?
+ *
+ * @example
+ * ```typescript
+ * const result = await poof.removeBackground(input);
+ * if (isJob(result)) {
+ *   const done = await poof.waitForJob(result);
+ * } else {
+ *   fs.writeFileSync('output.png', Buffer.from(result.data));
+ * }
+ * ```
+ */
+export function isJob(value: RemoveBackgroundResult | Job): value is Job {
+  return typeof value === 'object' && value !== null && 'status' in value && typeof (value as Job).id === 'string';
+}
+
+function isTerminal(status: JobStatus): boolean {
+  return status === 'completed' || status === 'failed';
+}
+
+/** The job object as the API returns it (snake_case) */
+interface RawJob {
+  id: string;
+  status: JobStatus;
+  progress: number;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_seconds: number;
+  fps: number;
+  width: number;
+  height: number;
+  frames: number;
+  credits: number;
+  format: Job['format'];
+  channels: Job['channels'];
+  status_url: string;
+  result_url: string | null;
+  expires_at: string | null;
+  error: Job['error'];
+  stats: Job['stats'];
+}
+
+function toJob(raw: RawJob): Job {
+  return {
+    id: raw.id,
+    status: raw.status,
+    progress: raw.progress ?? 0,
+    createdAt: raw.created_at,
+    startedAt: raw.started_at ?? null,
+    completedAt: raw.completed_at ?? null,
+    durationSeconds: raw.duration_seconds,
+    fps: raw.fps,
+    width: raw.width,
+    height: raw.height,
+    frames: raw.frames,
+    credits: raw.credits,
+    format: raw.format,
+    channels: raw.channels,
+    statusUrl: raw.status_url,
+    resultUrl: raw.result_url ?? null,
+    expiresAt: raw.expires_at ?? null,
+    error: raw.error ?? null,
+    stats: raw.stats ?? null,
+  };
 }
