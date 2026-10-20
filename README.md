@@ -258,7 +258,7 @@ const poof = new Poof({
 | File path (string) | ❌ | ✅   |
 | `{ url: string }` (public https URL) | ✅ | ✅ |
 
-Images: PNG, JPEG, WebP, up to 20 MB (a still, single-frame GIF is rejected with `invalid_image`; convert it to PNG). Videos: MP4, MOV, WebM, MKV, animated GIF (two or more frames), up to 100 MB uploaded or 500 MB by URL, up to 5 minutes.
+Images: PNG, JPEG, WebP, up to 20 MB (a still, single-frame GIF is rejected with `invalid_image`; convert it to PNG). Videos: MP4, MOV, WebM, M4V, MKV, animated GIF (two or more frames), up to 100 MB uploaded or 500 MB by URL, up to 5 minutes.
 
 ## TypeScript
 
