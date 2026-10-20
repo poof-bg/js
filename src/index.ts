@@ -25,8 +25,11 @@ export type {
   WaitForJobOptions,
   AccountInfo,
   ErrorCode,
+  ErrorDetails,
   ApiErrorResponse,
 } from './types.js';
+
+export type { PoofErrorOptions } from './errors.js';
 
 export {
   PoofError,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Poof, isJob } from '../index.js';
-import { PoofError, ValidationError } from '../errors.js';
+import { PoofError, ServerError, ValidationError } from '../errors.js';
 import type { Job } from '../types.js';
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
@@ -132,6 +132,47 @@ describe('removeBackground (image)', () => {
     expect(error.status).toBe(400);
     expect(error.requestId).toBe('req_2');
   });
+
+  it('keeps object details and doc_url from validation errors', async () => {
+    responses.push(
+      json(400, {
+        code: 'validation_error',
+        message: 'crop is not supported for video',
+        details: { field: 'crop' },
+        request_id: 'req_3',
+        doc_url: 'https://docs.poof.bg/errors/validation-error',
+      })
+    );
+
+    const error = await poof().removeBackground(PNG).catch((e) => e);
+    expect(error).toBeInstanceOf(ValidationError);
+    expect(error.details).toEqual({ field: 'crop' });
+    expect(error.docUrl).toBe('https://docs.poof.bg/errors/validation-error');
+  });
+
+  it('maps processing_failed to ServerError and not_found to PoofError', async () => {
+    responses.push(
+      json(500, { code: 'processing_failed', message: 'boom', request_id: 'req_4' }),
+      json(404, { code: 'not_found', message: 'nope', request_id: 'req_5' })
+    );
+    const failed = await poof().removeBackground(PNG).catch((e) => e);
+    expect(failed).toBeInstanceOf(ServerError);
+    expect(failed.code).toBe('processing_failed');
+    const missing = await poof().removeBackground(PNG).catch((e) => e);
+    expect(missing).toBeInstanceOf(PoofError);
+    expect(missing.code).toBe('not_found');
+  });
+
+  it('sends crop only when enabled', async () => {
+    responses.push(
+      new Response(PNG, { status: 200, headers: { 'Content-Type': 'image/png' } }),
+      new Response(PNG, { status: 200, headers: { 'Content-Type': 'image/png' } })
+    );
+    await poof().removeBackground(PNG, { crop: false });
+    expect((await formOf(calls[0])).has('crop')).toBe(false);
+    await poof().removeBackground(PNG, { crop: '1:1' });
+    expect((await formOf(calls[1])).get('crop')).toBe('1:1');
+  });
 });
 
 describe('removeBackground (video)', () => {
@@ -169,6 +210,13 @@ describe('removeBackground (video)', () => {
     expect(file.type).toBe('video/mp4');
     expect(file.name).toBe('video.mp4');
     expect(form.get('format')).toBe('webm');
+  });
+
+  it('does not send crop: false for a video (the API rejects crop on video)', async () => {
+    responses.push(json(202, rawJob()));
+    await poof().removeBackground(MP4, { crop: false, format: 'webm' });
+    const form = await formOf(calls[0]);
+    expect(form.has('crop')).toBe(false);
   });
 
   it('detects WebM input', async () => {
