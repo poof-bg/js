@@ -145,7 +145,7 @@ const done = await poof.removeBackground('./clip.mp4', {
   format: 'mp4',        // 'webm' (transparent) | 'mov' (transparent ProRes) | 'mp4' (opaque)
   channels: 'rgba',     // 'rgba' | 'rgb' | 'alpha' (grayscale matte video, no audio)
   bgColor: '#00ff00',   // Background for opaque output (mp4 or channels 'rgb'); default white
-  size: 'hd',           // Longest side cap; video output never exceeds 1080p
+  size: 'hd',           // Longest side cap: 640 / 1280 / 1920 (hd); 'full' keeps the source up to 4K
   wait: { pollIntervalMs: 5000, timeoutMs: 15 * 60 * 1000 },
 });
 ```
