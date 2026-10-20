@@ -60,7 +60,7 @@ const result = await poof.removeBackground(file, {
   padding: '10%',      // Padding around the subject when cropping
   size: 'medium',      // Size preset: 'full' | 'preview' | 'medium' | 'hd'
   channels: 'rgb',     // 'rgba' for transparency, 'rgb' for opaque, 'alpha' for the mask
-  bgColor: '#ffffff',  // Background color (when channels is 'rgb' or 'rgba')
+  bgColor: '#ffffff',  // Background for opaque output: channels 'rgb' or format 'jpg' (ignored when transparent)
 });
 ```
 
@@ -116,7 +116,9 @@ fs.writeFileSync('output.png', Buffer.from(result.data));
 
 ### Video
 
-Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, capped at 720p, for stickers and chat; pass `size: 'preview'` for sticker-sized output). Audio is kept except for `gif`. An animated GIF is accepted as input too and is processed as a video; a still GIF is handled like any other image. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
+Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, capped at 1280 px on the longest side (720p for widescreen) and 50 fps, for stickers and chat; pass `size: 'preview'` for sticker-sized output). Audio is kept, except for `gif` output and `channels: 'alpha'` (matte) output, which have no audio track. An animated GIF is accepted as input too and is processed as a video; a still GIF is handled like any other image. `crop`, `padding`, `width`, `height` and `fit` are image-only options.
+
+**Pricing:** 5 credits per second of video, rounded up to the next whole second (10 credits per second above 30 fps). Animated GIF input is always 5 credits per second, whatever its frame rate. Credits are charged when the job is accepted and refunded automatically if it fails. If your remaining credits don't cover the whole clip, the upload is rejected with a 402 `payment_required` (`PaymentRequiredError`) and nothing is charged.
 
 ```typescript
 import { Poof } from '@poof-bg/js';
@@ -144,7 +146,7 @@ Shorter: `wait: true` submits and waits in one call.
 const done = await poof.removeBackground('./clip.mp4', {
   format: 'mp4',        // 'webm' (transparent) | 'mov' (transparent ProRes) | 'mp4' (opaque) | 'gif' (1-bit transparent)
   channels: 'rgba',     // 'rgba' | 'rgb' | 'alpha' (grayscale matte video, no audio)
-  bgColor: '#00ff00',   // Background for opaque output (mp4 or channels 'rgb'); default white
+  bgColor: '#00ff00',   // Background for opaque output (mp4 or channels 'rgb'); default white; ignored when transparent
   size: 'hd',           // Longest side cap: 640 / 1280 / 1920 (hd); 'full' keeps the source up to 4K
   wait: { pollIntervalMs: 5000, timeoutMs: 15 * 60 * 1000 },
 });
@@ -177,7 +179,9 @@ if (isJob(result)) {
 }
 ```
 
-A failed job makes `waitForJob()` throw a `PoofError` with code `job_failed`; the credits are refunded automatically. Jobs are limited to 5 minutes of video.
+A failed job makes `waitForJob()` throw a `PoofError` with code `job_failed`; the credits are refunded automatically.
+
+Limits: up to 5 minutes of video, 100 MB per upload, 500 MB when submitted by `{ url }`.
 
 ### Account Information
 
@@ -220,11 +224,12 @@ try {
   if (error instanceof AuthenticationError) {
     console.error('Invalid API key');
   } else if (error instanceof PaymentRequiredError) {
-    console.error('Insufficient credits');
+    console.error('Insufficient credits (for video: not enough left for the whole clip)');
   } else if (error instanceof RateLimitError) {
     console.error('Rate limit exceeded, retry later');
   } else if (error instanceof ValidationError) {
-    console.error('Invalid input:', error.details);
+    console.error('Invalid input:', error.details); // e.g. { field: 'crop' }
+    console.error('Docs:', error.docUrl);
   } else if (error instanceof PoofError && error.code === 'job_failed') {
     console.error('Video job failed, credits refunded:', error.message);
   } else if (error instanceof PoofError) {

@@ -96,7 +96,10 @@ export class Poof {
     if (options.channels) formData.append('channels', options.channels);
     if (options.bgColor) formData.append('bg_color', options.bgColor);
     if (options.size) formData.append('size', options.size);
-    if (options.crop !== undefined) formData.append('crop', String(options.crop));
+    // crop defaults to false and is image-only: only send it when enabled, so
+    // `crop: false` on a video is not rejected with a validation_error.
+    if (options.crop === true) formData.append('crop', 'true');
+    else if (typeof options.crop === 'string' && options.crop) formData.append('crop', options.crop);
     if (options.padding) formData.append('padding', options.padding);
     if (options.width !== undefined) formData.append('width', String(options.width));
     if (options.height !== undefined) formData.append('height', String(options.height));

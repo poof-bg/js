@@ -15,7 +15,11 @@ export interface PoofOptions {
 /** Output image format */
 export type ImageFormat = 'png' | 'jpg' | 'webp';
 
-/** Output video format: VP9 WebM (alpha or opaque), ProRes MOV (alpha or opaque) or H.264 MP4 (opaque) */
+/**
+ * Output video format: VP9 WebM (alpha or opaque), ProRes MOV (alpha or opaque),
+ * H.264 MP4 (opaque) or looping animated GIF (1-bit transparency, no audio,
+ * capped at 1280 px on the longest side / 720p for widescreen, and 50 fps)
+ */
 export type VideoFormat = 'webm' | 'mov' | 'mp4' | 'gif';
 
 /** Output color channels */
@@ -48,15 +52,19 @@ export interface WaitForJobOptions {
 
 /** Options for background removal */
 export interface RemoveBackgroundOptions {
-  /** Output format: png, jpg or webp for images (default: png); webm, mov or mp4 for videos (default: webm) */
+  /** Output format: png, jpg or webp for images (default: png); webm, mov, mp4 or gif for videos (default: webm) */
   format?: ImageFormat | VideoFormat;
   /** Color channels - rgba for transparency, rgb for opaque, alpha for the grayscale mask only (default: rgba) */
   channels?: Channels;
-  /** Background color (hex, rgb, or color name). Applies when channels is 'rgb' or 'rgba' */
+  /**
+   * Background color (hex, rgb, or color name; default white). Used for opaque
+   * output: channels 'rgb', format 'jpg' and format 'mp4'. Ignored for
+   * transparent output
+   */
   bgColor?: string;
   /** Output size preset (default: full) */
   size?: ImageSize;
-  /** Crop to subject bounds: true/false or an aspect ratio like '1:1', '4:3', '16:9' (default: false) */
+  /** Images only. Crop to subject bounds: true or an aspect ratio like '1:1', '4:3', '16:9' (default: false; not sent unless enabled) */
   crop?: boolean | string;
   /** Padding around the subject when crop is enabled, as a fraction ('0.1') or percentage ('10%') */
   padding?: string;
@@ -143,7 +151,10 @@ export interface Job {
   height: number;
   /** Number of frames in the source video */
   frames: number;
-  /** Credits charged for this job (5 per second of video, 10 above 30 fps); refunded if it fails */
+  /**
+   * Credits charged for this job: 5 per started second of video (10 above
+   * 30 fps; animated GIF input is always 5 per second). Refunded if it fails
+   */
   credits: number;
   /** Requested output format */
   format: VideoFormat;
@@ -185,6 +196,8 @@ export type ErrorCode =
   | 'missing_image'
   | 'image_too_large'
   | 'invalid_image'
+  | 'processing_failed'
+  | 'not_found'
   | 'video_too_large'
   | 'video_too_long'
   | 'invalid_video'
@@ -197,9 +210,15 @@ export type ErrorCode =
 export interface ApiErrorResponse {
   code: ErrorCode;
   message: string;
-  details?: string;
+  /** Extra context; for validation_error an object such as { field: 'crop' } */
+  details?: ErrorDetails;
   request_id: string;
+  /** Link to the documentation page for this error code */
+  doc_url?: string;
 }
+
+/** Optional extra context on an API error: an object for validation errors, or a string */
+export type ErrorDetails = Record<string, unknown> | string;
 
 /** Valid input types for image and video processing: file contents, or a file path in Node.js */
 export type ImageInput = File | Blob | ArrayBuffer | Buffer | Uint8Array | string;

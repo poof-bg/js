@@ -1,4 +1,12 @@
-import type { ErrorCode, ApiErrorResponse } from './types.js';
+import type { ErrorCode, ApiErrorResponse, ErrorDetails } from './types.js';
+
+/** Options accepted by every Poof error class */
+export interface PoofErrorOptions {
+  status?: number;
+  requestId?: string;
+  details?: ErrorDetails;
+  docUrl?: string;
+}
 
 /**
  * Base error class for all Poof SDK errors
@@ -10,13 +18,15 @@ export class PoofError extends Error {
   readonly status?: number;
   /** Unique request ID for support */
   readonly requestId?: string;
-  /** Additional details */
-  readonly details?: string;
+  /** Additional details: an object for validation errors (e.g. { field: 'crop' }), or a string */
+  readonly details?: ErrorDetails;
+  /** Link to the documentation page for this error code */
+  readonly docUrl?: string;
 
   constructor(
     message: string,
     code: string,
-    options?: { status?: number; requestId?: string; details?: string }
+    options?: PoofErrorOptions
   ) {
     super(message);
     this.name = 'PoofError';
@@ -24,6 +34,7 @@ export class PoofError extends Error {
     this.status = options?.status;
     this.requestId = options?.requestId;
     this.details = options?.details;
+    this.docUrl = options?.docUrl;
 
     // Maintains proper stack trace for where error was thrown (V8 engines)
     if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function') {
@@ -38,6 +49,7 @@ export class PoofError extends Error {
       status,
       requestId: response.request_id,
       details: response.details,
+      docUrl: response.doc_url,
     });
   }
 }
@@ -46,7 +58,7 @@ export class PoofError extends Error {
  * Thrown when the API key is invalid or missing
  */
 export class AuthenticationError extends PoofError {
-  constructor(message: string, code: string, options?: { status?: number; requestId?: string; details?: string }) {
+  constructor(message: string, code: string, options?: PoofErrorOptions) {
     super(message, code, options);
     this.name = 'AuthenticationError';
   }
@@ -56,7 +68,7 @@ export class AuthenticationError extends PoofError {
  * Thrown when the account doesn't have permission
  */
 export class PermissionError extends PoofError {
-  constructor(message: string, code: string, options?: { status?: number; requestId?: string; details?: string }) {
+  constructor(message: string, code: string, options?: PoofErrorOptions) {
     super(message, code, options);
     this.name = 'PermissionError';
   }
@@ -66,7 +78,7 @@ export class PermissionError extends PoofError {
  * Thrown when the account has insufficient credits
  */
 export class PaymentRequiredError extends PoofError {
-  constructor(message: string, code: string, options?: { status?: number; requestId?: string; details?: string }) {
+  constructor(message: string, code: string, options?: PoofErrorOptions) {
     super(message, code, options);
     this.name = 'PaymentRequiredError';
   }
@@ -76,7 +88,7 @@ export class PaymentRequiredError extends PoofError {
  * Thrown when rate limit is exceeded
  */
 export class RateLimitError extends PoofError {
-  constructor(message: string, code: string, options?: { status?: number; requestId?: string; details?: string }) {
+  constructor(message: string, code: string, options?: PoofErrorOptions) {
     super(message, code, options);
     this.name = 'RateLimitError';
   }
@@ -86,7 +98,7 @@ export class RateLimitError extends PoofError {
  * Thrown when request parameters are invalid
  */
 export class ValidationError extends PoofError {
-  constructor(message: string, code: string, options?: { status?: number; requestId?: string; details?: string }) {
+  constructor(message: string, code: string, options?: PoofErrorOptions) {
     super(message, code, options);
     this.name = 'ValidationError';
   }
@@ -96,7 +108,7 @@ export class ValidationError extends PoofError {
  * Thrown when a server error occurs
  */
 export class ServerError extends PoofError {
-  constructor(message: string, code: string, options?: { status?: number; requestId?: string; details?: string }) {
+  constructor(message: string, code: string, options?: PoofErrorOptions) {
     super(message, code, options);
     this.name = 'ServerError';
   }
@@ -112,6 +124,8 @@ const ERROR_MAP: Record<ErrorCode, typeof PoofError> = {
   missing_image: ValidationError,
   image_too_large: ValidationError,
   invalid_image: ValidationError,
+  processing_failed: ServerError,
+  not_found: PoofError,
   video_too_large: ValidationError,
   video_too_long: ValidationError,
   invalid_video: ValidationError,
