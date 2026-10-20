@@ -116,7 +116,7 @@ fs.writeFileSync('output.png', Buffer.from(result.data));
 
 ### Video
 
-Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, capped at 720p, for stickers and chat; pass `size: 'preview'` for sticker-sized output). Audio is kept except for `gif`. An animated GIF is accepted as input too. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
+Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, capped at 720p, for stickers and chat; pass `size: 'preview'` for sticker-sized output). Audio is kept except for `gif`. An animated GIF is accepted as input too and is processed as a video; a still GIF is handled like any other image. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
 
 ```typescript
 import { Poof } from '@poof-bg/js';
@@ -258,7 +258,7 @@ const poof = new Poof({
 | File path (string) | ❌ | ✅   |
 | `{ url: string }` (public https URL) | ✅ | ✅ |
 
-Images: PNG, JPEG, WebP, single-frame GIF, up to 20 MB. Videos: MP4, MOV, WebM, MKV, animated GIF, up to 100 MB uploaded or 500 MB by URL, up to 5 minutes.
+Images: PNG, JPEG, WebP or a still (single-frame) GIF, up to 20 MB. Videos: MP4, MOV, WebM, M4V, MKV, animated GIF (two or more frames), up to 100 MB uploaded or 500 MB by URL, up to 5 minutes.
 
 ## TypeScript
 
