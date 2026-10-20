@@ -21,7 +21,11 @@ export type VideoFormat = 'webm' | 'mov' | 'mp4';
 /** Output color channels */
 export type Channels = 'rgba' | 'rgb' | 'alpha';
 
-/** Output image size preset */
+/**
+ * Output size preset. Images: megapixel cap. Videos: longest side capped at
+ * 640 (preview), 1280 (medium) or 1920 (hd); 'full' keeps the source
+ * resolution up to 4096 px (4K).
+ */
 export type ImageSize = 'full' | 'preview' | 'medium' | 'hd';
 
 /**
