@@ -5,6 +5,7 @@ import type { Job } from '../types.js';
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 // 'ftyp' at offset 4 with the isom brand
+const GIF = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0, 0, 0, 0, 0, 0]);
 const MP4 = new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]);
 const WEBM = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0, 0, 0, 0, 0, 0, 0, 0]);
 
@@ -176,6 +177,17 @@ describe('removeBackground (video)', () => {
     const file = (await formOf(calls[0])).get('file') as File;
     expect(file.type).toBe('video/webm');
     expect(file.name).toBe('video.webm');
+  });
+
+  it('accepts format: gif and sends an animated GIF as image/gif', async () => {
+    responses.push(json(202, rawJob({ format: 'gif' })));
+    const result = await poof().removeBackground(GIF, { format: 'gif', size: 'medium' });
+    expect(isJob(result)).toBe(true);
+    expect((result as Job).format).toBe('gif');
+    const form = await formOf(calls[0]);
+    const file = form.get('file') as File;
+    expect(file.type).toBe('image/gif');
+    expect(form.get('format')).toBe('gif');
   });
 
   it('sends `url` for { url } input and waits inline with wait: true', async () => {
