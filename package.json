@@ -1,6 +1,6 @@
 {
   "name": "@poof-bg/js",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Official Poof SDK for image and video background removal",
   "author": "Poof <support@poof.bg>",
   "license": "MIT",

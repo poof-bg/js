@@ -116,7 +116,7 @@ fs.writeFileSync('output.png', Buffer.from(result.data));
 
 ### Video
 
-Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, for stickers and chat; pass `size: 'medium'` to keep it small). Audio is kept except for `gif`. An animated GIF is accepted as input too. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
+Videos go through the same `removeBackground()` call. Because a clip takes a while to process, the call returns a `Job` instead of bytes: wait for it with `waitForJob()` (or pass `wait: true`), then download `resultUrl`. Output is a transparent VP9 WebM by default; `format` can also be `mov` (ProRes 4444 with alpha), `mp4` (H.264, composited on `bgColor`, default white) or `gif` (looping GIF with 1-bit transparency and no audio, capped at 720p, for stickers and chat; pass `size: 'preview'` for sticker-sized output). Audio is kept except for `gif`. An animated GIF is accepted as input too. Each started second of video costs 5 credits (10 above 30 fps), charged when the job is accepted and refunded if it fails.
 
 ```typescript
 import { Poof } from '@poof-bg/js';
