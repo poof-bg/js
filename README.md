@@ -60,7 +60,7 @@ const result = await poof.removeBackground(file, {
   padding: '10%',      // Padding around the subject when cropping
   size: 'medium',      // Size preset: 'full' | 'preview' | 'medium' | 'hd'
   channels: 'rgb',     // 'rgba' for transparency, 'rgb' for opaque, 'alpha' for the mask
-  bgColor: '#ffffff',  // Background for opaque output: channels 'rgb' or format 'jpg' (ignored when transparent)
+  bgColor: '#ffffff',  // Fills the background, so the result is opaque (omit for transparency; ignored with 'alpha')
 });
 ```
 
@@ -146,7 +146,7 @@ Shorter: `wait: true` submits and waits in one call.
 const done = await poof.removeBackground('./clip.mp4', {
   format: 'mp4',        // 'webm' (transparent) | 'mov' (transparent ProRes) | 'mp4' (opaque) | 'gif' (1-bit transparent)
   channels: 'rgba',     // 'rgba' | 'rgb' | 'alpha' (grayscale matte video, no audio)
-  bgColor: '#00ff00',   // Background for opaque output (mp4 or channels 'rgb'); default white; ignored when transparent
+  bgColor: '#00ff00',   // Fills the background, so the video is opaque in any format; mp4/'rgb' default to white
   size: 'hd',           // Longest side cap: 640 / 1280 / 1920 (hd); 'full' keeps the source up to 4K
   wait: { pollIntervalMs: 5000, timeoutMs: 15 * 60 * 1000 },
 });

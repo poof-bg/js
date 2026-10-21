@@ -57,9 +57,10 @@ export interface RemoveBackgroundOptions {
   /** Color channels - rgba for transparency, rgb for opaque, alpha for the grayscale mask only (default: rgba) */
   channels?: Channels;
   /**
-   * Background color (hex, rgb, or color name; default white). Used for opaque
-   * output: channels 'rgb', format 'jpg' and format 'mp4'. Ignored for
-   * transparent output
+   * Background color (hex, rgb, or color name). Setting it fills the
+   * background, so the result is opaque, for images and videos in every format
+   * (webm, mov and gif included). With channels 'rgb' (or format 'jpg'/'mp4')
+   * and no bgColor the background is white. Ignored with channels 'alpha'
    */
   bgColor?: string;
   /** Output size preset (default: full) */
