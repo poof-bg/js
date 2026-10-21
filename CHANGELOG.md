@@ -2,6 +2,12 @@
 
 All notable changes to `@poof-bg/js`. Versions follow [semver](https://semver.org).
 
+## Unreleased
+
+### Docs
+
+- `bgColor`: one rule for images and videos. Setting it fills the background, so the result is opaque on that colour (for video in every format, `webm`, `mov` and `gif` included); with `channels: 'rgb'` (or `jpg`/`mp4`) and no `bgColor` the background is white; ignored with `channels: 'alpha'`. It was previously documented as ignored for transparent output.
+
 ## 1.3.1 - 2026-10-20
 
 ### Fixed
